@@ -26,11 +26,14 @@
     <section class="card">
       <h2>Teste do API Gateway</h2>
       <p class="muted">
-        O botão abaixo chama <code>/health</code> no mesmo deployment do site.
+        Os botões abaixo chamam rotas no mesmo deployment do site.
       </p>
       <div class="actions">
         <button :disabled="loading" @click="testGateway">
-          {{ loading ? 'Testando...' : 'Testar gateway' }}
+          {{ activeTest === 'health' ? 'Testando...' : 'Testar gateway' }}
+        </button>
+        <button :disabled="loading" @click="testBackend">
+          {{ activeTest === 'backend' ? 'Testando...' : 'Testar backend' }}
         </button>
         <button class="secondary" @click="reset">Limpar</button>
       </div>
@@ -54,10 +57,12 @@ import { computed, ref } from 'vue';
 
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '';
 const apiBaseUrl = configuredApiBaseUrl || getCurrentDeploymentBaseUrl();
-const loading = ref(false);
+const activeTest = ref<'health' | 'backend' | null>(null);
 const output = ref('Aguardando teste...');
 
 const defaultHealthUrl = computed(() => `${apiBaseUrl}/health`);
+const backendTestUrl = computed(() => `${apiBaseUrl}/teste`);
+const loading = computed(() => activeTest.value !== null);
 
 function getCurrentDeploymentBaseUrl() {
   const path = window.location.pathname;
@@ -74,11 +79,19 @@ function getCurrentDeploymentBaseUrl() {
 }
 
 async function testGateway() {
-  loading.value = true;
-  output.value = `Chamando ${defaultHealthUrl.value}...`;
+  await callEndpoint(defaultHealthUrl.value, 'health');
+}
+
+async function testBackend() {
+  await callEndpoint(backendTestUrl.value, 'backend');
+}
+
+async function callEndpoint(url: string, testName: 'health' | 'backend') {
+  activeTest.value = testName;
+  output.value = `Chamando ${url}...`;
 
   try {
-    const response = await fetch(defaultHealthUrl.value, {
+    const response = await fetch(url, {
       headers: { Accept: 'application/json' },
     });
 
@@ -94,7 +107,7 @@ async function testGateway() {
   } catch (error) {
     output.value = `Falha ao chamar o gateway: ${error instanceof Error ? error.message : String(error)}`;
   } finally {
-    loading.value = false;
+    activeTest.value = null;
   }
 }
 

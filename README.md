@@ -10,7 +10,7 @@ https://docs.oracle.com/en/learn/oci-api-gateway-web-hosting/
 
 - Gera um build estatico em `dist/`.
 - Usa assets relativos (`./assets/...`) para funcionar atras de um deployment path do API Gateway.
-- Inclui um botao de teste que chama `GET /health` no mesmo deployment do site.
+- Inclui botoes de teste que chamam `GET /health` e `GET /teste` no mesmo deployment do site.
 - Permite sobrescrever o endpoint de API com `VITE_API_BASE_URL`, mas isso e opcional.
 
 ## Requisitos
@@ -218,12 +218,81 @@ Header: Content-Type = application/json
 
 O botao "Testar gateway" do app chama essa rota automaticamente.
 
+### Rota de teste para backend
+
+Crie uma terceira rota no mesmo deployment:
+
+```text
+Path: /teste
+Methods: GET
+```
+
+Para reproduzir o exemplo deste repo sem depender de outro servico, use:
+
+```text
+Backend type: Stock response
+Status code: 200
+Body: {"source":"stock-response","status":"ok"}
+Header: Content-Type = application/json
+```
+
+O botao "Testar backend" do app chama essa rota automaticamente. A resposta esperada no front e algo parecido com:
+
+```text
+HTTP 200 OK
+
+{
+  "source": "stock-response",
+  "status": "ok"
+}
+```
+
+Se voce tiver um backend real em OKE, uma VM, um Load Balancer privado/publico ou outro servico HTTP, configure a mesma rota `/teste` com:
+
+```text
+Backend type: HTTP
+URL: http://ENDERECO_DO_BACKEND:PORTA/CAMINHO
+```
+
+ou:
+
+```text
+Backend type: HTTP
+URL: https://ENDERECO_DO_BACKEND/CAMINHO
+```
+
+Use `GET` se o endpoint do backend responder a GET. Se o backend estiver em OKE, geralmente a URL mais simples para o API Gateway apontar e a URL de um OCI Load Balancer na frente do Service Kubernetes. Se estiver em uma VM, use o IP privado, IP publico ou FQDN que seja alcancavel a partir da subnet do API Gateway.
+
+Exemplos:
+
+```text
+http://10.0.2.15:8080/teste
+```
+
+```text
+http://meu-load-balancer-privado:8080/teste
+```
+
+```text
+https://api.exemplo.com/teste
+```
+
+Para backend privado na mesma VCN/subnet ou em subnet pareada, confirme:
+
+- O Security List ou NSG da subnet do API Gateway permite egress para o IP/porta do backend.
+- O Security List ou NSG do backend permite ingress vindo da subnet ou NSG do API Gateway.
+- A porta configurada no backend HTTP do API Gateway e a porta real exposta pelo servico sao a mesma.
+- O backend responde em HTTP/HTTPS no caminho configurado.
+
+Quando configurado com backend HTTP, a resposta esperada no front e o status e corpo devolvidos pelo seu backend. Por exemplo, se o backend responder `{"app":"oke","status":"ok"}`, o painel vai mostrar esse JSON abaixo de `HTTP 200 OK`.
+
 ## Rede
 
 O API Gateway precisa estar em uma subnet com regras compativeis:
 
 - Ingress TCP 443 para permitir acesso publico ao gateway.
 - Egress TCP 443 para permitir que o gateway acesse o Object Storage pela URL HTTPS da PAR.
+- Egress para a porta do backend, se a rota `/teste` apontar para OKE, VM ou outro backend HTTP privado.
 
 Se o site nao carregar, verifique primeiro:
 
@@ -232,6 +301,7 @@ Se o site nao carregar, verifique primeiro:
 - A rota `/{req*}` esta usando as URLs corretas.
 - Os arquivos existem no bucket com `Content-Type` correto.
 - A subnet do gateway permite ingress/egress em TCP 443.
+- A rota `/teste`, se usada com backend real, consegue alcancar o IP/FQDN e a porta do backend.
 
 ## Variavel de ambiente opcional
 

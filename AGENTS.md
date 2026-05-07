@@ -8,7 +8,7 @@ This is a Vue 3 + Vite static app meant to be built locally, uploaded to OCI Obj
 
 The app is intentionally small:
 
-- `src/App.vue` renders the UI and calls `GET /health`.
+- `src/App.vue` renders the UI and calls `GET /health` and `GET /teste`.
 - `src/main.ts` mounts Vue.
 - `src/styles.css` contains all styling.
 - `vite.config.ts` sets `base: './'` so built assets work behind an API Gateway deployment path.
@@ -22,6 +22,7 @@ By default, the browser computes the current API Gateway deployment URL from `wi
 
 ```text
 {current-deployment-url}/health
+{current-deployment-url}/teste
 ```
 
 `VITE_API_BASE_URL` is only an optional build-time override.
@@ -105,6 +106,26 @@ Body: {"status":"ok"}
 Header: Content-Type = application/json
 ```
 
+And a backend connectivity test route:
+
+```text
+Path: /teste
+Methods: GET
+Backend type: Stock response
+Status code: 200
+Body: {"source":"stock-response","status":"ok"}
+Header: Content-Type = application/json
+```
+
+For real backend tests, `/teste` can use:
+
+```text
+Backend type: HTTP
+URL: http://BACKEND_HOST:PORT/PATH
+```
+
+The backend may be an OKE Service through an OCI Load Balancer, a VM, or another HTTP endpoint reachable from the API Gateway subnet. If it is private, verify API Gateway egress rules and backend ingress rules for the target port.
+
 ## Optional OCI CLI Upload
 
 An agent may upload `dist/` with OCI CLI if the user explicitly wants that and the local environment is authenticated.
@@ -155,3 +176,4 @@ oci os object head --namespace-name "$OCI_NAMESPACE" --bucket-name "$OCI_BUCKET"
 - Keep README examples generic.
 - Rebuild before uploading after any source change.
 - If a browser cannot load assets, check deployment path slash behavior, PAR expiration, API Gateway route matching, and subnet ingress/egress TCP 443.
+- If `/teste` fails with a real backend, check the backend URL, HTTP method, target port, API Gateway egress, and backend ingress rules.

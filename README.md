@@ -17,7 +17,7 @@ https://docs.oracle.com/en/learn/oci-api-gateway-web-hosting/
 
 - Node.js 20 ou superior
 - npm
-- OCI CLI autenticado
+- OCI CLI autenticado, opcional para upload por linha de comando
 - Permissoes para Object Storage e API Gateway na sua tenancy OCI
 
 ## Rodar localmente
@@ -46,7 +46,74 @@ dist/
 
 Crie um bucket no Object Storage. Ele pode ser privado, porque o API Gateway acessara os objetos por PAR.
 
-Depois do build, envie o conteudo de `dist/` para o bucket. Exemplo com OCI CLI:
+Depois do build, envie o conteudo de `dist/` para o bucket.
+
+### Opcao 1: upload manual pelo Console
+
+Voce pode fazer upload pelo Console da OCI. O ponto mais importante e preencher o `Content-Type` correto para cada tipo de arquivo.
+
+No bucket, faca os uploads em grupos:
+
+```text
+dist/index.html       -> bucket root
+dist/assets/*.css     -> assets/
+dist/assets/*.js      -> assets/
+```
+
+Para `index.html`:
+
+1. Abra o bucket no Object Storage.
+2. Clique em `Upload`.
+3. Selecione apenas `dist/index.html`.
+4. Em `Optional response headers and metadata`, adicione um item.
+5. Em `Type`, selecione `Response header`.
+6. Em `Name`, preencha `Content-Type`.
+7. Em `Value`, preencha `text/html`.
+8. Conclua o upload.
+
+Para arquivos CSS:
+
+1. Entre na pasta `assets/` do bucket, ou use `Object name prefix` com o valor `assets/`.
+2. Selecione os arquivos `dist/assets/*.css`.
+3. Em `Optional response headers and metadata`, adicione:
+
+```text
+Type: Response header
+Name: Content-Type
+Value: text/css
+```
+
+Para arquivos JavaScript:
+
+1. Entre na pasta `assets/` do bucket, ou use `Object name prefix` com o valor `assets/`.
+2. Selecione os arquivos `dist/assets/*.js`.
+3. Em `Optional response headers and metadata`, adicione:
+
+```text
+Type: Response header
+Name: Content-Type
+Value: application/javascript
+```
+
+Nao deixe `Type` como `Metadata` para `Content-Type`. O correto e `Response header`, porque o navegador precisa receber esse header na resposta HTTP.
+
+Se o app tiver outros tipos de arquivo, use estes valores comuns:
+
+```text
+*.json   application/json
+*.svg    image/svg+xml
+*.png    image/png
+*.jpg    image/jpeg
+*.jpeg   image/jpeg
+*.ico    image/x-icon
+*.woff2  font/woff2
+```
+
+Evite enviar arquivos de tipos diferentes no mesmo upload quando precisar configurar `Content-Type`, porque o mesmo header pode ser aplicado ao lote inteiro.
+
+### Opcao 2: upload via OCI CLI
+
+Exemplo com OCI CLI:
 
 ```bash
 oci os ns get --profile SEU_PROFILE --auth security_token

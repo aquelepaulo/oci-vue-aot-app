@@ -247,6 +247,8 @@ HTTP 200 OK
 }
 ```
 
+Se voce clicar em "Testar backend" antes de criar essa rota, o API Gateway pode cair na rota `/{req*}` e devolver o `index.html` do site com `HTTP 200`. Isso nao significa que o backend funcionou; significa que a rota `/teste` ainda nao esta configurada ou foi capturada pelo fallback do site estatico. O app mostra um aviso quando detecta esse HTML.
+
 Se voce tiver um backend real em OKE, uma VM, um Load Balancer privado/publico ou outro servico HTTP, configure a mesma rota `/teste` com:
 
 ```text

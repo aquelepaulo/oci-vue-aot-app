@@ -63,6 +63,11 @@ const output = ref('Aguardando teste...');
 const defaultHealthUrl = computed(() => `${apiBaseUrl}/health`);
 const backendTestUrl = computed(() => `${apiBaseUrl}/teste`);
 const loading = computed(() => activeTest.value !== null);
+const htmlFallbackMessage = [
+  'A resposta parece ser o index.html do site.',
+  'Isso normalmente significa que a rota nao existe no API Gateway, ou que foi capturada pelo fallback /{req*}.',
+  'Crie uma rota especifica para este endpoint no deployment e teste novamente.',
+].join('\n');
 
 function getCurrentDeploymentBaseUrl() {
   const path = window.location.pathname;
@@ -99,11 +104,13 @@ async function callEndpoint(url: string, testName: 'health' | 'backend') {
     const body = contentType.includes('application/json')
       ? JSON.stringify(await response.json(), null, 2)
       : await response.text();
+    const isHtmlFallback = contentType.includes('text/html') || body.trimStart().toLowerCase().startsWith('<!doctype html');
 
     output.value = [
       `HTTP ${response.status} ${response.statusText}`,
+      isHtmlFallback ? htmlFallbackMessage : '',
       body,
-    ].join('\n\n');
+    ].filter(Boolean).join('\n\n');
   } catch (error) {
     output.value = `Falha ao chamar o gateway: ${error instanceof Error ? error.message : String(error)}`;
   } finally {

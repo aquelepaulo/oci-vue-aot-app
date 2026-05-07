@@ -126,6 +126,8 @@ URL: http://BACKEND_HOST:PORT/PATH
 
 The backend may be an OKE Service through an OCI Load Balancer, a VM, or another HTTP endpoint reachable from the API Gateway subnet. If it is private, verify API Gateway egress rules and backend ingress rules for the target port.
 
+If `/teste` is not configured, the catch-all `/{req*}` route may return `index.html` with HTTP 200. The app treats HTML responses from test endpoints as likely static-site fallback, not a successful backend response.
+
 ## Optional OCI CLI Upload
 
 An agent may upload `dist/` with OCI CLI if the user explicitly wants that and the local environment is authenticated.
@@ -177,3 +179,4 @@ oci os object head --namespace-name "$OCI_NAMESPACE" --bucket-name "$OCI_BUCKET"
 - Rebuild before uploading after any source change.
 - If a browser cannot load assets, check deployment path slash behavior, PAR expiration, API Gateway route matching, and subnet ingress/egress TCP 443.
 - If `/teste` fails with a real backend, check the backend URL, HTTP method, target port, API Gateway egress, and backend ingress rules.
+- If `/teste` returns `index.html`, add or fix the explicit `/teste` route in the API Gateway deployment.
